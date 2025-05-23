@@ -1,13 +1,11 @@
 <?php
 session_start();
 
-// Si déjà connecté, redirige vers dashboard
-if (isset($_SESSION['username'])) {
+if (!empty($_SESSION['username'])) {
     header('Location: dashboard.php');
     exit();
 }
 
-// Config AD
 $ldap_host = "ldaps://ldaps.fashionchic.local";
 $ldap_port = 636;
 $ldap_dn = "DC=fashionchic,DC=local";
@@ -17,29 +15,42 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
-    $upn = $username . '@fashionchic.local';
 
-    $ldap = ldap_connect($ldap_host, $ldap_port);
-    ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3);
-    ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
+    if ($username && $password) {
+        $upn = $username . '@fashionchic.local';
 
-    if (@ldap_bind($ldap, $upn, $password)) {
-        // Recherche des infos utilisateur (ex: cn/mail)
-        $filter = "(sAMAccountName=$username)";
-        $attrs = ["cn", "mail"];
-        $result = ldap_search($ldap, $ldap_dn, $filter, $attrs);
-        $entries = ldap_get_entries($ldap, $result);
+        $ldap = ldap_connect($ldap_host, $ldap_port);
+        ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3);
+        ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
 
-        $_SESSION['username'] = $entries[0]['cn'][0] ?? $username;
-        $_SESSION['mail'] = $entries[0]['mail'][0] ?? '';
-        header("Location: dashboard.php");
-        exit();
+        if (@ldap_bind($ldap, $upn, $password)) {
+            $filter = "(sAMAccountName=$username)";
+            $attrs = ["cn", "mail", "memberOf"];
+            $result = ldap_search($ldap, $ldap_dn, $filter, $attrs);
+            $entries = ldap_get_entries($ldap, $result);
+
+            $_SESSION['username'] = $entries[0]['cn'][0] ?? $username;
+            $_SESSION['mail'] = $entries[0]['mail'][0] ?? '';
+
+            // Récupération du groupe principal (premier membre)
+            $groupName = '';
+            if (!empty($entries[0]['memberof'][0])) {
+                if (preg_match('/CN=([^,]+)/', $entries[0]['memberof'][0], $matches)) {
+                    $groupName = $matches[1];
+                }
+            }
+            $_SESSION['group'] = $groupName;
+
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            $error = "Identifiant ou mot de passe incorrect, ou erreur de connexion AD.";
+        }
     } else {
-        $error = "Identifiant ou mot de passe incorrect, ou erreur de connexion AD.";
+        $error = "Veuillez remplir tous les champs.";
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -61,21 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="password">Mot de passe</label>
             </div>
             <button type="submit">Se connecter</button>
-            <div class="error-message" id="error-message">
-                <?php if($error) echo htmlspecialchars($error); ?>
-            </div>
+            <?php if ($error): ?>
+                <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+            <?php endif; ?>
         </form>
     </div>
-    <script>
-    // Affiche une erreur si les champs sont vides (feedback JS)
-    document.getElementById('loginForm').addEventListener('submit', function(event) {
-        let user = document.getElementById('username').value.trim();
-        let pass = document.getElementById('password').value.trim();
-        if(!user || !pass){
-            document.getElementById('error-message').innerText = "Veuillez remplir tous les champs.";
-            event.preventDefault();
-        }
-    });
-    </script>
 </body>
 </html>
