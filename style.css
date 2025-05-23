@@ -71,7 +71,7 @@ h1 {
     top: -0.65rem;
     left: 2rem;
     font-size: 0.82rem;
-    background: #fff;             
+    background: transparent;            
     border-radius: 0.4em;
     display: inline-block;
     line-height: 1;
