@@ -55,29 +55,21 @@ h1 {
 
 .input-group label {
     position: absolute;
-    left: 50%;
+    left: 2.2rem;     
     top: 1rem;
-    transform: translateX(-50%);
     color: #d57a7a;
     font-size: 1rem;
     pointer-events: none;
     background: transparent;
     transition: all 0.18s;
-    width: 80%;
     text-align: left;
     padding-left: 0.2rem;
 }
 
-.input-group input:focus,
-.input-group input:not(:placeholder-shown) {
-    border-color: #ef233c;
-}
-
 .input-group input:focus + label,
 .input-group input:not(:placeholder-shown) + label {
-    top: -0.7rem;
-    left: 50%;
-    transform: translateX(-50%);
+    top: -1.1rem;        
+    left: 2rem;         
     font-size: 0.82rem;
     background: #fff;
     padding: 0 0.3rem;
@@ -86,7 +78,6 @@ h1 {
     text-align: left;
     padding-left: 0.2rem;
 }
-
 
 button[type="submit"], .logout-btn {
     background: linear-gradient(90deg, #ef233c 0%, #ffb3b3 100%);
