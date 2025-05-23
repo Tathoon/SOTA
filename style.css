@@ -66,17 +66,18 @@ h1 {
     background: transparent;
 }
 
+.input-group input:focus, .input-group input:not(:placeholder-shown) {
+    border-color: #ef233c;
+}
+
 .input-group input:focus + label,
 .input-group input:not(:placeholder-shown) + label {
-    top: -0.65rem;
-    left: 2rem;
+    top: -0.7rem;
+    left: 0.8rem;
     font-size: 0.82rem;
-    background: transparent;            
-    border-radius: 0.4em;
-    display: inline-block;
-    line-height: 1;
+    background: #fff;
+    padding: 0 0.3rem;
     color: #ef233c;
-    padding: 0 0.3em;
 }
 
 button[type="submit"], .logout-btn {
