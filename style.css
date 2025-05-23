@@ -68,14 +68,16 @@ h1 {
 
 .input-group input:focus + label,
 .input-group input:not(:placeholder-shown) + label {
-    top: -0.65rem;        
-    left: 2rem;           
+    top: -0.65rem;
+    left: 2rem;
     font-size: 0.82rem;
-    background: #fff;
+    background: #fff;             
+    border-radius: 0.4em;
+    display: inline-block;
+    line-height: 1;
     color: #ef233c;
-    padding: 0 0.3rem;
+    padding: 0 0.3em;
 }
-
 
 button[type="submit"], .logout-btn {
     background: linear-gradient(90deg, #ef233c 0%, #ffb3b3 100%);
