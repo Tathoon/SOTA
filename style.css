@@ -1,21 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto&display=swap');
 
 body {
-    background: linear-gradient(135deg, #f8fafc 0%, #e8eaf6 100%);
+    background: linear-gradient(135deg, #ffe6e6 0%, #fff5f5 100%);
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Roboto', sans-serif;
+    margin: 0;
 }
 
-.login-container {
+.login-container, .dashboard-container {
     background: #fff;
     padding: 2.5rem 2rem;
     border-radius: 1.5rem;
-    box-shadow: 0 6px 32px rgba(50, 50, 100, 0.13);
-    width: 350px;
-    max-width: 90vw;
+    box-shadow: 0 6px 32px rgba(255, 50, 50, 0.09);
+    width: 360px;
+    max-width: 96vw;
     text-align: center;
 }
 
@@ -23,7 +24,7 @@ h1 {
     font-family: 'Montserrat', sans-serif;
     font-weight: 700;
     margin-bottom: 2rem;
-    color: #8e24aa;
+    color: #ef233c;
     letter-spacing: 2px;
 }
 
@@ -36,9 +37,9 @@ h1 {
 .input-group input {
     width: 100%;
     padding: 1rem 1rem 1rem 0.9rem;
-    border: 2px solid #eee;
+    border: 2px solid #fde7e7;
     border-radius: 0.8rem;
-    background: #fafafa;
+    background: #fff6f6;
     outline: none;
     font-size: 1rem;
     transition: border 0.2s;
@@ -49,7 +50,7 @@ h1 {
     position: absolute;
     left: 1rem;
     top: 1rem;
-    color: #aaa;
+    color: #d57a7a;
     font-size: 1rem;
     pointer-events: none;
     background: transparent;
@@ -57,7 +58,7 @@ h1 {
 }
 
 .input-group input:focus, .input-group input:not(:placeholder-shown) {
-    border-color: #8e24aa;
+    border-color: #ef233c;
 }
 
 .input-group input:focus + label,
@@ -67,11 +68,11 @@ h1 {
     font-size: 0.82rem;
     background: #fff;
     padding: 0 0.3rem;
-    color: #8e24aa;
+    color: #ef233c;
 }
 
-button[type="submit"] {
-    background: linear-gradient(90deg, #8e24aa 0%, #ce93d8 100%);
+button[type="submit"], .logout-btn {
+    background: linear-gradient(90deg, #ef233c 0%, #ffb3b3 100%);
     color: #fff;
     border: none;
     border-radius: 0.8rem;
@@ -80,18 +81,29 @@ button[type="submit"] {
     font-family: 'Montserrat', sans-serif;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 3px 10px rgba(142,36,170,0.07);
+    box-shadow: 0 3px 10px rgba(239, 35, 60, 0.08);
     margin-top: 0.7rem;
     transition: background 0.2s;
 }
 
-button[type="submit"]:hover {
-    background: linear-gradient(90deg, #ce93d8 0%, #8e24aa 100%);
+button[type="submit"]:hover, .logout-btn:hover {
+    background: linear-gradient(90deg, #ffb3b3 0%, #ef233c 100%);
 }
 
 .error-message {
     color: #d32f2f;
-    font-size: 0.95rem;
+    font-size: 0.98rem;
     margin-top: 0.7rem;
     min-height: 1.3rem;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .login-container, .dashboard-container {
+        padding: 1.1rem 0.4rem;
+        width: 99vw;
+    }
+    h1 {
+        font-size: 1.5rem;
+    }
 }
