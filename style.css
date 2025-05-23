@@ -55,29 +55,27 @@ h1 {
 
 .input-group label {
     position: absolute;
-    left: 2.2rem;     
-    top: 1rem;
+    left: 2.2rem;
+    top: 1.1rem; 
     color: #d57a7a;
     font-size: 1rem;
     pointer-events: none;
     background: transparent;
     transition: all 0.18s;
-    text-align: left;
-    padding-left: 0.2rem;
+    padding: 0 0.3rem;
+    background: transparent;
 }
 
 .input-group input:focus + label,
 .input-group input:not(:placeholder-shown) + label {
-    top: -1.1rem;        
-    left: 2rem;         
+    top: -0.65rem;        
+    left: 2rem;           
     font-size: 0.82rem;
     background: #fff;
-    padding: 0 0.3rem;
     color: #ef233c;
-    width: auto;
-    text-align: left;
-    padding-left: 0.2rem;
+    padding: 0 0.3rem;
 }
+
 
 button[type="submit"], .logout-btn {
     background: linear-gradient(90deg, #ef233c 0%, #ffb3b3 100%);

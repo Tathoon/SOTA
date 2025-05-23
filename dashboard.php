@@ -17,7 +17,6 @@ if (empty($_SESSION['username'])) {
 <body>
     <div class="dashboard-container">
         <h1>Bienvenue, <?php echo htmlspecialchars($_SESSION['username']); ?> !</h1>
-        <p>Votre email : <b><?php echo htmlspecialchars($_SESSION['mail'] ?? 'inconnu'); ?></b></p>
         <form action="logout.php" method="post">
             <button type="submit" class="logout-btn">Déconnexion</button>
         </form>
