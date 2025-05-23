@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto&display=swap');
+
+body {
+    background: linear-gradient(135deg, #f8fafc 0%, #e8eaf6 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Roboto', sans-serif;
+}
+
+.login-container {
+    background: #fff;
+    padding: 2.5rem 2rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 6px 32px rgba(50, 50, 100, 0.13);
+    width: 350px;
+    max-width: 90vw;
+    text-align: center;
+}
+
+h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: #8e24aa;
+    letter-spacing: 2px;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 1.7rem;
+    width: 100%;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 0.9rem;
+    border: 2px solid #eee;
+    border-radius: 0.8rem;
+    background: #fafafa;
+    outline: none;
+    font-size: 1rem;
+    transition: border 0.2s;
+    font-family: 'Roboto', sans-serif;
+}
+
+.input-group label {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    color: #aaa;
+    font-size: 1rem;
+    pointer-events: none;
+    background: transparent;
+    transition: all 0.18s;
+}
+
+.input-group input:focus, .input-group input:not(:placeholder-shown) {
+    border-color: #8e24aa;
+}
+
+.input-group input:focus + label,
+.input-group input:not(:placeholder-shown) + label {
+    top: -0.7rem;
+    left: 0.8rem;
+    font-size: 0.82rem;
+    background: #fff;
+    padding: 0 0.3rem;
+    color: #8e24aa;
+}
+
+button[type="submit"] {
+    background: linear-gradient(90deg, #8e24aa 0%, #ce93d8 100%);
+    color: #fff;
+    border: none;
+    border-radius: 0.8rem;
+    padding: 0.9rem 2.5rem;
+    font-size: 1rem;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(142,36,170,0.07);
+    margin-top: 0.7rem;
+    transition: background 0.2s;
+}
+
+button[type="submit"]:hover {
+    background: linear-gradient(90deg, #ce93d8 0%, #8e24aa 100%);
+}
+
+.error-message {
+    color: #d32f2f;
+    font-size: 0.95rem;
+    margin-top: 0.7rem;
+    min-height: 1.3rem;
+}
