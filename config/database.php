@@ -1,9 +1,9 @@
 <?php
 class Database {
-    private $host = 'localhost';
-    private $db_name = 'Sota';
+    private $host = '192.168.100.4:3306';
+    private $db_name = 'sota';
     private $username = 'root';
-    private $password = '';
+    private $password = 'sotaR00t!';
     private $conn;
 
     public function getConnection() {
