@@ -13,7 +13,7 @@ function isLoggedIn() {
  */
 function requireLogin(array $roles = []) {
     if (!isLoggedIn()) {
-        header('Location: /sota/login.php');
+        header('Location: /login.php');
         exit();
     }
 
