@@ -96,17 +96,17 @@ $user = getCurrentUser(); // array ['prenom', 'nom', 'role']
                         <div class="card">
                             <i class="fas fa-plus icon"></i>
                             <p>Nouveau produit</p>
-                            <a href="pages/produits/" class="btn-orange">Ajouter</a>
+                            <a href="pages/produits/produits.php" class="btn-orange">Ajouter</a>
                         </div>
                         <div class="card">
                             <i class="fas fa-shopping-cart icon"></i>
                             <p>Nouvelle commande</p>
-                            <a href="pages/commandes/" class="btn-orange">Créer</a>
+                            <a href="pages/commandes/commandes.php" class="btn-orange">Créer</a>
                         </div>
                         <div class="card">
                             <i class="fas fa-exchange-alt icon"></i>
                             <p>Mouvement stock</p>
-                            <a href="pages/stocks/" class="btn-orange">Ajouter</a>
+                            <a href="pages/stocks/stocks.php" class="btn-orange">Ajouter</a>
                         </div>
                     </div>
                 </section>
