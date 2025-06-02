@@ -128,7 +128,7 @@ $user = getCurrentUser(); // array ['prenom', 'nom', 'role']
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
-                    <a href="pages/commandes/" class="view-all">Voir toutes les commandes →</a>
+                    <a href="pages/commandes/commandes.php" class="view-all">Voir toutes les commandes →</a>
                 </section>
             </div>
         </main>
