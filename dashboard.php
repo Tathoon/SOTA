@@ -1,78 +1,137 @@
 <?php
-session_start();
+require_once 'includes/session.php';
+require_once 'includes/functions.php';
 
-if (empty($_SESSION['username'])) {
-    header('Location: login.php');
-    exit();
-}
+requireLogin(); // redirige vers login.php si session absente
+
+$manager = new SotaManager();
+$stats = $manager->getStatistiquesDashboard();
+$alertes = $manager->getProduitsAlerteSeuil();
+$commandes_recentes = $manager->getCommandes('', 5);
+
+$user = getCurrentUser(); // array ['prenom', 'nom', 'role']
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Fashion Chic - Tableau de bord</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .dashboard-container {
-            background: #fff;
-            padding: 2.8rem 2.4rem 2.5rem 2.4rem;
-            border-radius: 1.5rem;
-            box-shadow: 0 6px 32px rgba(239,35,60,0.09);
-            max-width: 480px;
-            width: 98vw;
-            text-align: center;
-            margin: 7vh auto 0 auto;
-        }
-        .dashboard-container h1 {
-            color: #ef233c;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 2.2rem;
-            font-weight: 700;
-            margin-bottom: 1.4rem;
-            letter-spacing: 1.3px;
-        }
-        .user-group {
-            display: inline-block;
-            background: linear-gradient(90deg, #ffb3b3 0%, #ef233c 100%);
-            color: #fff;
-            font-size: 1.06rem;
-            font-weight: 600;
-            border-radius: 1rem;
-            padding: 0.5rem 1.3rem;
-            margin-bottom: 1.2rem;
-            margin-top: 0.7rem;
-            letter-spacing: 1px;
-            box-shadow: 0 1px 10px rgba(239,35,60,0.09);
-        }
-        .logout-btn {
-            margin-top: 2rem;
-        }
-        @media (max-width: 480px) {
-            .dashboard-container {
-                padding: 1rem 0.3rem 1.5rem 0.3rem;
-            }
-            .dashboard-container h1 {
-                font-size: 1.25rem;
-            }
-            .user-group {
-                font-size: 0.98rem;
-                padding: 0.5rem 0.9rem;
-            }
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de bord - SOTA</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body>
-    <div class="dashboard-container">
-        <h1>Bienvenue, <?php echo htmlspecialchars($_SESSION['username']); ?> !</h1>
-        <?php if (!empty($_SESSION['group'])): ?>
-            <div class="user-group"><?php echo htmlspecialchars($_SESSION['group']); ?></div>
-        <?php else: ?>
-            <div class="user-group" style="background: #fff;color:#ef233c;border:1.2px solid #ef233c;">Aucun groupe trouvé</div>
-        <?php endif; ?>
-        <form action="logout.php" method="post">
-            <button type="submit" class="logout-btn">Déconnexion</button>
-        </form>
+<body class="dashboard-body">
+    <div class="container dashboard-container">
+        <?php include 'includes/sidebar.php'; ?>
+        
+        <main class="main-content dashboard-main">
+            <div class="top-bar">
+                <div class="user-info">
+                    <span>Bonjour, <?php echo htmlspecialchars($user['prenom'] . ' ' . $user['nom']); ?></span>
+                    <span class="user-role">(<?php echo ucfirst($user['role']); ?>)</span>
+                </div>
+                <a href="logout.php" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </a>
+            </div>
+
+            <section class="dashboard-header">
+                <h1><i class="fas fa-chart-line"></i> Tableau de bord</h1>
+                <p class="dashboard-subtitle">Vue d'ensemble de votre activité</p>
+            </section>
+
+            <!-- Statistiques rapides -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-box icon"></i>
+                    <div class="stat-content">
+                        <h3><?php echo $stats['total_produits']; ?></h3>
+                        <p>Produits actifs</p>
+                    </div>
+                </div>
+                <div class="stat-card alert">
+                    <i class="fas fa-exclamation-triangle icon"></i>
+                    <div class="stat-content">
+                        <h3><?php echo $stats['produits_alerte'] + $stats['produits_rupture']; ?></h3>
+                        <p>Alertes stock</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-shopping-cart icon"></i>
+                    <div class="stat-content">
+                        <h3><?php echo $stats['commandes_attente']; ?></h3>
+                        <p>Commandes en attente</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-truck icon"></i>
+                    <div class="stat-content">
+                        <h3><?php echo $stats['livraisons_cours']; ?></h3>
+                        <p>Livraisons en cours</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alertes stocks -->
+            <?php if (!empty($alertes)): ?>
+            <section class="dashboard-section">
+                <h2><i class="fas fa-exclamation-triangle"></i> Alertes de stock</h2>
+                <div class="alert-list">
+                    <?php foreach ($alertes as $produit): ?>
+                    <div class="alert-item">
+                        <span class="product-name"><?php echo htmlspecialchars($produit['nom']); ?></span>
+                        <span class="stock-level"><?php echo $produit['stock_actuel']; ?> en stock</span>
+                        <span class="threshold">Seuil: <?php echo $produit['seuil_minimum']; ?></span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+            <?php endif; ?>
+
+            <div class="dashboard-grid">
+                <!-- Raccourcis rapides -->
+                <section class="dashboard-section">
+                    <h2><i class="fas fa-rocket"></i> Accès rapide</h2>
+                    <div class="cards">
+                        <div class="card">
+                            <i class="fas fa-plus icon"></i>
+                            <p>Nouveau produit</p>
+                            <a href="pages/produits/" class="btn-orange">Ajouter</a>
+                        </div>
+                        <div class="card">
+                            <i class="fas fa-shopping-cart icon"></i>
+                            <p>Nouvelle commande</p>
+                            <a href="pages/commandes/" class="btn-orange">Créer</a>
+                        </div>
+                        <div class="card">
+                            <i class="fas fa-exchange-alt icon"></i>
+                            <p>Mouvement stock</p>
+                            <a href="pages/stocks/" class="btn-orange">Ajouter</a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Commandes récentes -->
+                <section class="dashboard-section">
+                    <h2><i class="fas fa-list"></i> Commandes récentes</h2>
+                    <div class="recent-list">
+                        <?php if (empty($commandes_recentes)): ?>
+                            <p>Aucune commande récente</p>
+                        <?php else: ?>
+                            <?php foreach ($commandes_recentes as $commande): ?>
+                            <div class="recent-item">
+                                <strong><?php echo htmlspecialchars($commande['numero_commande']); ?></strong>
+                                <span><?php echo htmlspecialchars($commande['client_nom']); ?></span>
+                                <span class="date"><?php echo formatDate($commande['date_commande']); ?></span>
+                                <?php echo getStatusBadge($commande['statut']); ?>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                    <a href="pages/commandes/" class="view-all">Voir toutes les commandes →</a>
+                </section>
+            </div>
+        </main>
     </div>
 </body>
 </html>
