@@ -17,6 +17,8 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
+    // Protection contre l'injection LDAP
+    $escapedUsername = ldap_escape($username, '', LDAP_ESCAPE_FILTER);
     $upn = $username . '@fashionchic.local';
 
     $ldap = ldap_connect($ldap_host, $ldap_port);
@@ -25,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($ldap && @ldap_bind($ldap, $upn, $password)) {
         // Recherche des infos
-        $filter = "(sAMAccountName=$username)";
+        $filter = "(sAMAccountName=$escapedUsername)";
         $attributes = ['cn', 'givenName', 'sn', 'mail', 'memberOf'];
         $result = ldap_search($ldap, $ldap_dn, $filter, $attributes);
         $entries = ldap_get_entries($ldap, $result);
