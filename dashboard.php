@@ -82,6 +82,9 @@ $user = getCurrentUser(); // array ['prenom', 'nom', 'role']
                         <span class="product-name"><?php echo htmlspecialchars($produit['nom']); ?></span>
                         <span class="stock-level"><?php echo $produit['stock_actuel']; ?> en stock</span>
                         <span class="threshold">Seuil: <?php echo $produit['seuil_minimum']; ?></span>
+                        <a href="pages/stocks/mouvement.php?produit=<?= $produit['id'] ?>" class="btn-border btn-small">
+                            <i class="fas fa-plus"></i> Réapprovisionner
+                        </a>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -96,17 +99,22 @@ $user = getCurrentUser(); // array ['prenom', 'nom', 'role']
                         <div class="card">
                             <i class="fas fa-plus icon"></i>
                             <p>Nouveau produit</p>
-                            <a href="pages/produits/produits.php" class="btn-orange">Ajouter</a>
+                            <a href="pages/produits/nouveau.php" class="btn-orange">Ajouter</a>
                         </div>
                         <div class="card">
                             <i class="fas fa-shopping-cart icon"></i>
                             <p>Nouvelle commande</p>
-                            <a href="pages/commandes/commandes.php" class="btn-orange">Créer</a>
+                            <a href="pages/commandes/nouvelle.php" class="btn-orange">Créer</a>
                         </div>
                         <div class="card">
                             <i class="fas fa-exchange-alt icon"></i>
                             <p>Mouvement stock</p>
-                            <a href="pages/stocks/stocks.php" class="btn-orange">Ajouter</a>
+                            <a href="pages/stocks/mouvement.php" class="btn-orange">Ajouter</a>
+                        </div>
+                        <div class="card">
+                            <i class="fas fa-truck-loading icon"></i>
+                            <p>Nouveau fournisseur</p>
+                            <a href="pages/fournisseurs/nouveau.php" class="btn-orange">Ajouter</a>
                         </div>
                     </div>
                 </section>
@@ -117,6 +125,9 @@ $user = getCurrentUser(); // array ['prenom', 'nom', 'role']
                     <div class="recent-list">
                         <?php if (empty($commandes_recentes)): ?>
                             <p>Aucune commande récente</p>
+                            <a href="pages/commandes/nouvelle.php" class="btn-orange" style="margin-top: 10px;">
+                                <i class="fas fa-plus"></i> Créer la première commande
+                            </a>
                         <?php else: ?>
                             <?php foreach ($commandes_recentes as $commande): ?>
                             <div class="recent-item">
@@ -131,6 +142,25 @@ $user = getCurrentUser(); // array ['prenom', 'nom', 'role']
                     <a href="pages/commandes/commandes.php" class="view-all">Voir toutes les commandes →</a>
                 </section>
             </div>
+
+            <!-- Actions rapides supplémentaires -->
+            <section class="dashboard-section">
+                <h2><i class="fas fa-tools"></i> Actions rapides</h2>
+                <div class="stock-actions">
+                    <a href="pages/stocks/stocks.php" class="btn-border">
+                        <i class="fas fa-warehouse"></i> Voir les stocks
+                    </a>
+                    <a href="pages/produits/produits.php" class="btn-border">
+                        <i class="fas fa-box"></i> Tous les produits
+                    </a>
+                    <a href="pages/fournisseurs/fournisseurs.php" class="btn-border">
+                        <i class="fas fa-truck-loading"></i> Fournisseurs
+                    </a>
+                    <a href="pages/categories/categories.php" class="btn-border">
+                        <i class="fas fa-tags"></i> Catégories
+                    </a>
+                </div>
+            </section>
         </main>
     </div>
 </body>

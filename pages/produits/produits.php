@@ -7,7 +7,16 @@ requireLogin(['Admin', 'Gérant']);
 
 $manager = new SotaManager();
 $produits = $manager->getProduits();
+$categories = $manager->getCategories();
 $user = getCurrentUser();
+
+// Filtres
+$search = $_GET['search'] ?? '';
+$category_filter = $_GET['category'] ?? '';
+
+if (!empty($search) || !empty($category_filter)) {
+    $produits = $manager->getProduits($search, $category_filter);
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -34,6 +43,32 @@ $user = getCurrentUser();
                 <p class="dashboard-subtitle">Liste des produits disponibles dans l'inventaire</p>
             </section>
 
+            <!-- Filtres -->
+            <div class="filters-section">
+                <form method="GET" class="filters-form">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="search" placeholder="Rechercher un produit..." value="<?= htmlspecialchars($search) ?>">
+                    </div>
+                    <select name="category" class="filter-select">
+                        <option value="">Toutes les catégories</option>
+                        <?php foreach ($categories as $categorie): ?>
+                            <option value="<?= $categorie['id'] ?>" <?= $category_filter == $categorie['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($categorie['nom']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="submit" class="btn-border">
+                        <i class="fas fa-filter"></i> Filtrer
+                    </button>
+                    <?php if (!empty($search) || !empty($category_filter)): ?>
+                        <a href="produits.php" class="btn-border">
+                            <i class="fas fa-times"></i> Reset
+                        </a>
+                    <?php endif; ?>
+                </form>
+            </div>
+
             <table class="stock-table">
                 <thead>
                     <tr>
@@ -52,7 +87,7 @@ $user = getCurrentUser();
                         <td><?= htmlspecialchars($produit['reference'] ?? '') ?></td>
                         <td><?= htmlspecialchars($produit['nom'] ?? '') ?></td>
                         <td><?= htmlspecialchars($produit['categorie_nom'] ?? 'Non catégorisé') ?></td>
-                        <td><?= $produit['stock_actuel'] ?? 0 ?></td>
+                        <td><strong><?= $produit['stock_actuel'] ?? 0 ?></strong></td>
                         <td><?= formatPrice($produit['prix_vente'] ?? 0) ?></td>
                         <td>
                             <?php 
@@ -67,9 +102,12 @@ $user = getCurrentUser();
                             <?php endif; ?>
                         </td>
                         <td class="actions">
-                            <button class="btn-border btn-small" onclick="alert('Fonctionnalité à venir')">
+                            <a href="modifier.php?id=<?= $produit['id'] ?>" class="btn-border btn-small">
                                 <i class="fas fa-edit"></i> Modifier
-                            </button>
+                            </a>
+                            <a href="../stocks/mouvement.php?produit=<?= $produit['id'] ?>" class="btn-border btn-small">
+                                <i class="fas fa-exchange-alt"></i> Stock
+                            </a>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -77,13 +115,13 @@ $user = getCurrentUser();
             </table>
 
             <div class="stock-actions">
-                <button onclick="alert('Fonctionnalité à venir')" class="btn-orange">
+                <a href="nouveau.php" class="btn-orange">
                     <i class="fas fa-plus"></i> Ajouter un produit
-                </button>
-                <button onclick="alert('Fonctionnalité à venir')" class="btn-border">
+                </a>
+                <a href="../stocks/mouvement.php" class="btn-border">
                     <i class="fas fa-exchange-alt"></i> Mouvement de stock
-                </button>
-                <button onclick="alert('Export à venir')" class="btn-border">
+                </a>
+                <button onclick="window.location.href='export.php'" class="btn-border">
                     <i class="fas fa-download"></i> Exporter
                 </button>
             </div>

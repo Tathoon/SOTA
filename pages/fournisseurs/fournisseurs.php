@@ -40,6 +40,7 @@ $user = getCurrentUser();
                         <th>Nom</th>
                         <th>Ville</th>
                         <th>Téléphone</th>
+                        <th>Email</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -49,13 +50,17 @@ $user = getCurrentUser();
                         <td><strong><?= htmlspecialchars($fournisseur['nom'] ?? '') ?></strong></td>
                         <td><?= htmlspecialchars($fournisseur['ville'] ?? '-') ?></td>
                         <td><?= htmlspecialchars($fournisseur['telephone'] ?? '-') ?></td>
+                        <td><?= htmlspecialchars($fournisseur['email'] ?? '-') ?></td>
                         <td class="actions">
-                            <button class="btn-border btn-small" onclick="alert('Fonctionnalité à venir')">
+                            <a href="details.php?id=<?= $fournisseur['id'] ?>" class="btn-border btn-small">
                                 <i class="fas fa-eye"></i> Voir
-                            </button>
-                            <button class="btn-border btn-small" onclick="alert('Fonctionnalité à venir')">
+                            </a>
+                            <a href="modifier.php?id=<?= $fournisseur['id'] ?>" class="btn-border btn-small">
                                 <i class="fas fa-edit"></i> Modifier
-                            </button>
+                            </a>
+                            <a href="commande.php?fournisseur=<?= $fournisseur['id'] ?>" class="btn-border btn-small">
+                                <i class="fas fa-shopping-cart"></i> Commander
+                            </a>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -63,11 +68,14 @@ $user = getCurrentUser();
             </table>
 
             <div class="stock-actions">
-                <button onclick="alert('Fonctionnalité à venir')" class="btn-orange">
+                <a href="nouveau.php" class="btn-orange">
                     <i class="fas fa-plus"></i> Ajouter fournisseur
-                </button>
-                <button onclick="alert('Fonctionnalité à venir')" class="btn-border">
-                    <i class="fas fa-history"></i> Historique des commandes
+                </a>
+                <a href="commandes_fournisseurs.php" class="btn-border">
+                    <i class="fas fa-history"></i> Commandes fournisseurs
+                </a>
+                <button onclick="window.location.href='export.php'" class="btn-border">
+                    <i class="fas fa-download"></i> Exporter
                 </button>
             </div>
         </main>

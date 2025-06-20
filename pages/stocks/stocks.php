@@ -2,7 +2,7 @@
 require_once '../../includes/session.php';
 require_once '../../includes/functions.php';
 
-requireLogin(['Admin', 'Préparateur']); // ← Ajout de la restriction de rôle
+requireLogin(['Admin', 'Préparateur']);
 
 $manager = new SotaManager();
 $produits = $manager->getProduits();
@@ -66,12 +66,12 @@ $user = getCurrentUser();
                             <?php endif; ?>
                         </td>
                         <td class="actions">
-                            <button class="btn-border btn-small" onclick="alert('Fonctionnalité à venir')">
+                            <a href="mouvement.php?produit=<?= $produit['id'] ?>" class="btn-border btn-small">
                                 <i class="fas fa-exchange-alt"></i> Mouvement
-                            </button>
-                            <button class="btn-border btn-small" onclick="alert('Fonctionnalité à venir')">
+                            </a>
+                            <a href="historique.php?produit=<?= $produit['id'] ?>" class="btn-border btn-small">
                                 <i class="fas fa-history"></i> Historique
-                            </button>
+                            </a>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -79,13 +79,13 @@ $user = getCurrentUser();
             </table>
 
             <div class="stock-actions">
-                <button onclick="alert('Fonctionnalité à venir')" class="btn-orange">
+                <a href="mouvement.php" class="btn-orange">
                     <i class="fas fa-exchange-alt"></i> Nouveau mouvement
-                </button>
-                <button onclick="alert('Fonctionnalité à venir')" class="btn-border">
+                </a>
+                <a href="historique.php" class="btn-border">
                     <i class="fas fa-history"></i> Historique complet
-                </button>
-                <button onclick="alert('Export à venir')" class="btn-border">
+                </a>
+                <button onclick="window.location.href='export.php'" class="btn-border">
                     <i class="fas fa-download"></i> Exporter stocks
                 </button>
             </div>
