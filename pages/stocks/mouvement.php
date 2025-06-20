@@ -76,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label for="produit_id">Produit *</label>
                             <select name="produit_id" id="produit_id" required class="form-control">
                                 <option value="">Sélectionner un produit</option>
+                                var_dump($produits)
                                 <?php foreach ($produits as $produit): ?>
                                     <option value="<?= $produit['id'] ?>" 
                                             data-stock="<?= $produit['stock_actuel'] ?>"
