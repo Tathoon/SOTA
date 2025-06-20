@@ -112,7 +112,7 @@ class SotaManager {
             $stmt->execute($params);
             return $stmt->fetchAll();
         } catch (Exception $e) {
-            return [];
+            return $e->getMessage();
         }
     }
 
