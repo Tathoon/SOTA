@@ -85,8 +85,8 @@ class SotaManager {
     public function getProduits($search = '', $category = '', $limit = null) {
         try {
             $sql = "SELECT p.*, c.nom as categorie_nom 
-                    FROM Produits p 
-                    LEFT JOIN Categories c ON p.categorie_id = c.id 
+                    FROM produits p 
+                    LEFT JOIN categories c ON p.categorie_id = c.id 
                     WHERE p.actif = 1";
             $params = [];
 
