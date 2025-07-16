@@ -84,9 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - SOTA Fashion</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico">
 </head>
 <body class="login-page">
     <div class="login-container">
@@ -115,8 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </button>
 
             <div class="login-footer">
-                <p>Authentification via Active Directory</p>
-                <small>Utilisez vos identifiants fashionchic.local</small>
+                <p>Accès sécurisé</p>
+                <small>Connectez-vous avec vos identifiants</small>
             </div>
         </form>
     </div>
