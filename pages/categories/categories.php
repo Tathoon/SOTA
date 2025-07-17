@@ -123,9 +123,10 @@ $error = $_GET['error'] ?? $error ?? '';
                                     <a href="modifier.php?id=<?= $categorie['id'] ?>" class="btn-border btn-small">
                                         <i class="fas fa-edit"></i> Modifier
                                     </a>
-                                    <button onclick="confirmerSuppressionCategorie(<?= $categorie['id'] ?>, <?= $categorie['nb_produits'] ?>)" class="btn-danger btn-small">
+                                    <button onclick="supprimerCategorie(<?= $categorie['id'] ?>, <?= $categorie['nb_produits'] ?>)" class="btn-danger btn-small">
                                         <i class="fas fa-trash"></i> Supprimer
                                     </button>
+
                                 </div>
                             </div>
                         <?php endforeach; ?>
