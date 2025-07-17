@@ -123,11 +123,9 @@ $error = $_GET['error'] ?? $error ?? '';
                                     <a href="modifier.php?id=<?= $categorie['id'] ?>" class="btn-border btn-small">
                                         <i class="fas fa-edit"></i> Modifier
                                     </a>
-                                    <?php if ($categorie['nb_produits'] == 0): ?>
-                                        <button onclick="supprimerCategorie(<?= $categorie['id'] ?>)" class="btn-danger btn-small">
-                                            <i class="fas fa-trash"></i> Supprimer
-                                        </button>
-                                    <?php endif; ?>
+                                    <button onclick="confirmerSuppressionCategorie(<?= $categorie['id'] ?>, <?= $categorie['nb_produits'] ?>)" class="btn-danger btn-small">
+                                        <i class="fas fa-trash"></i> Supprimer
+                                    </button>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -274,29 +272,37 @@ $error = $_GET['error'] ?? $error ?? '';
     </style>
 
     <script>
-        function supprimerCategorie(id) {
-            if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?\n\nCette action est irréversible.')) {
-                // Créer un formulaire pour envoyer la requête DELETE
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'supprimer.php';
-                
-                const idInput = document.createElement('input');
-                idInput.type = 'hidden';
-                idInput.name = 'id';
-                idInput.value = id;
-                
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrf_token';
-                csrfInput.value = '<?= generateCSRFToken() ?>';
-                
-                form.appendChild(idInput);
-                form.appendChild(csrfInput);
-                document.body.appendChild(form);
-                form.submit();
-            }
+    function supprimerCategorie(id, nbProduits = 0) {
+        let message = "Êtes-vous sûr de vouloir supprimer cette catégorie ?\n\nCette action est irréversible.";
+
+        if (nbProduits > 0) {
+            message += `\n⚠️ Attention : cela supprimera également ${nbProduits} produit(s) lié(s).`;
         }
-    </script>
+
+        if (confirm(message)) {
+            // Créer un formulaire pour envoyer la requête POST
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'supprimer.php';
+            
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'id';
+            idInput.value = id;
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = '<?= generateCSRFToken() ?>';
+            
+            form.appendChild(idInput);
+            form.appendChild(csrfInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
+
+
 </body>
 </html>
