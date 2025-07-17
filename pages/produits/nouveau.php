@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Le prix de vente doit être supérieur à 0");
         }
 
-        $produit_id = $manager->ajouterProduit($data);
+        var_dump($user['id']); exit;
         
         if ($produit_id) {
             logActivite('creation_produit', [
