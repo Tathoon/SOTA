@@ -33,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($entries["count"] > 0) {
             $infos = $entries[0];
 
-            $_SESSION['user_id'] = $username;
             $_SESSION['user_prenom'] = $infos['givenname'][0] ?? '';
             $_SESSION['user_nom'] = $infos['sn'][0] ?? '';
             $_SESSION['user_mail'] = $infos['mail'][0] ?? '';
@@ -58,28 +57,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $manager = new SotaManager();
                 $manager->syncUtilisateurLDAP([
                     'username' => $username,
-                    'prenom' => $infos['givenname'][0] ?? '',
-                    'nom' => $infos['sn'][0] ?? '',
-                    'email' => $infos['mail'][0] ?? '',
+                    'prenom' => $_SESSION['user_prenom'],
+                    'nom' => $_SESSION['user_nom'],
+                    'email' => $_SESSION['user_mail'],
                     'role' => $role
                 ]);
-                
-                // Mettre à jour la dernière connexion
+
+                // Mettre à jour la date de connexion
                 $stmt = $manager->db->prepare("UPDATE utilisateurs_ldap SET derniere_connexion = CURRENT_TIMESTAMP WHERE username = ?");
                 $stmt->execute([$username]);
+
+                // Récupérer l'ID numérique du user
+                $stmt = $manager->db->prepare("SELECT id FROM utilisateurs_ldap WHERE username = ?");
+                $stmt->execute([$username]);
+                $userFromDB = $stmt->fetch();
+
+                if ($userFromDB) {
+                    $_SESSION['user_id'] = $userFromDB['id']; // ✅ un entier, bon pour les clés étrangères
+                } else {
+                    $_SESSION['user_id'] = null;
+                    $error = "Utilisateur LDAP introuvable dans la base.";
+                }
+
             } catch (Exception $e) {
                 error_log("Erreur sync utilisateur: " . $e->getMessage());
+                $error = "Erreur interne. Contactez l'administrateur.";
             }
 
-            header('Location: dashboard.php');
-            exit();
+            if (empty($error)) {
+                header('Location: dashboard.php');
+                exit();
+            }
         }
     }
 
-    $error = "Échec de la connexion. Vérifiez vos identifiants.";
+    if (empty($error)) {
+        $error = "Échec de la connexion. Vérifiez vos identifiants.";
+    }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -128,25 +144,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-align: center;
             margin-bottom: 30px;
         }
-        
         .login-header h2 {
             color: #ff6b35;
             margin-bottom: 10px;
             font-size: 28px;
         }
-        
         .login-header p {
             color: #666;
             font-size: 14px;
         }
-        
         .login-footer {
             text-align: center;
             margin-top: 20px;
             color: #666;
             font-size: 13px;
         }
-        
         .login-footer small {
             display: block;
             margin-top: 5px;
