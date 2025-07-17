@@ -241,10 +241,6 @@ $error = $_GET['error'] ?? $error ?? '';
                                                         class="btn-border btn-small" title="Voir détails">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <button onclick="viewUserLogs('<?= htmlspecialchars($utilisateur['username']) ?>')" 
-                                                        class="btn-border btn-small" title="Voir logs">
-                                                    <i class="fas fa-history"></i>
-                                                </button>
                                                 <?php if (!$utilisateur['actif']): ?>
                                                     <button onclick="toggleUserStatus(<?= $utilisateur['id'] ?>, 1)" 
                                                             class="btn-orange btn-small" title="Activer">
