@@ -300,7 +300,7 @@ $error = $_GET['error'] ?? $error ?? '';
                     <i class="fas fa-download"></i> Exporter rapport CA
                 </a>
                 <a href="export.php?type=produits&date_debut=<?= $date_debut ?>&date_fin=<?= $date_fin ?>" class="btn-border">
-                    <i class="fas fa-download"></i> Exporter top produits
+                    <i class="fas fa-download"></i> Exporter top lot
                 </a>
                 <a href="export.php?type=stock" class="btn-border">
                     <i class="fas fa-download"></i> Exporter état stock

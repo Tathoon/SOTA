@@ -102,10 +102,6 @@ $error = $_GET['error'] ?? '';
                     <a href="nouveau.php" class="btn-orange">
                         <i class="fas fa-plus"></i> Nouveau lot
                     </a>
-                    <a href="export.php?format=csv<?= $search ? '&search=' . urlencode($search) : '' ?><?= $category ? '&category=' . $category : '' ?><?= $statut_stock ? '&statut_stock=' . $statut_stock : '' ?>" 
-                       class="btn-border">
-                        <i class="fas fa-download"></i> Exporter CSV
-                    </a>
                 </div>
             </section>
 

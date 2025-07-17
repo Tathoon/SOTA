@@ -224,10 +224,6 @@ $error = $_GET['error'] ?? $error ?? '';
                             <i class="fas fa-plus"></i> Nouvelle livraison
                         </a>
                     <?php endif; ?>
-                    <a href="export.php?format=csv<?= $search ? '&search=' . urlencode($search) : '' ?><?= $statut ? '&statut=' . $statut : '' ?>" 
-                       class="btn-border">
-                        <i class="fas fa-download"></i> Exporter CSV
-                    </a>
                     <a href="planning.php" class="btn-border">
                         <i class="fas fa-calendar-alt"></i> Planning livraisons
                     </a>

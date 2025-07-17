@@ -138,10 +138,6 @@ $error = $_GET['error'] ?? '';
                     <a href="commandes_fournisseurs.php" class="btn-border">
                         <i class="fas fa-shopping-cart"></i> Commandes fournisseurs
                     </a>
-                    <a href="export.php?format=csv<?= $search ? '&search=' . urlencode($search) : '' ?>" 
-                       class="btn-border">
-                        <i class="fas fa-download"></i> Exporter CSV
-                    </a>
                 </div>
             </section>
 

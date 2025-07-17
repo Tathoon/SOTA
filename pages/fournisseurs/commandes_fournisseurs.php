@@ -197,9 +197,6 @@ $error = $_GET['error'] ?? '';
                     <a href="fournisseurs.php" class="btn-border">
                         <i class="fas fa-truck-loading"></i> Retour fournisseurs
                     </a>
-                    <a href="export_commandes.php?format=csv" class="btn-border">
-                        <i class="fas fa-download"></i> Exporter CSV
-                    </a>
                 </div>
             </section>
 

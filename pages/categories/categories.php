@@ -74,9 +74,6 @@ $error = $_GET['error'] ?? $error ?? '';
                     <a href="nouvelle.php" class="btn-orange">
                         <i class="fas fa-plus"></i> Nouvelle catégorie
                     </a>
-                    <a href="export.php?format=csv" class="btn-border">
-                        <i class="fas fa-download"></i> Exporter CSV
-                    </a>
                 </div>
             </section>
 

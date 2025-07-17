@@ -206,9 +206,6 @@ $error = $_GET['error'] ?? $error ?? '';
                     <a href="stocks.php" class="btn-border">
                         <i class="fas fa-warehouse"></i> Retour aux stocks
                     </a>
-                    <a href="export_historique.php?<?= http_build_query($_GET) ?>" class="btn-border">
-                        <i class="fas fa-download"></i> Exporter CSV
-                    </a>
                 </div>
             </section>
 
