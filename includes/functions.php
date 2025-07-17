@@ -295,7 +295,7 @@ class SotaManager {
             // Vérifier que le produit existe
             $produit_actuel = $this->getProduitById($id);
             if (!$produit_actuel) {
-                throw new Exception("Produit non trouvé");
+                throw new Exception("Lot non trouvé");
             }
 
             // Vérifier unicité de la référence (sauf pour le produit actuel)
@@ -403,7 +403,7 @@ class SotaManager {
             $produit = $stmt->fetch();
 
             if (!$produit) {
-                throw new Exception("Produit non trouvé");
+                throw new Exception("Lot non trouvé");
             }
 
             $stock_avant = $produit['stock_actuel'];
@@ -721,7 +721,7 @@ class SotaManager {
         }
 
         if (empty($data['produits']) || !is_array($data['produits'])) {
-            $erreurs[] = "Au moins un produit doit être commandé";
+            $erreurs[] = "Au moins un lot doit être commandé";
         } else {
             foreach ($data['produits'] as $index => $produit) {
                 if (empty($produit['produit_id']) || empty($produit['quantite']) || empty($produit['prix_unitaire'])) {

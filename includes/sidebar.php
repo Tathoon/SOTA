@@ -20,10 +20,10 @@ function active($path) {
 
         <?php if (in_array($role, ['Admin', 'Gérant'])): ?>
             <li class="<?= active('produits') ?>">
-                <a href="/pages/produits/produits.php"><i class="fas fa-tshirt"></i> Produits</a>
+                <a href="/pages/produits/produits.php"><i class="fas fa-tshirt"></i> Lots</a>
             </li>
             <li style="margin-left: 20px;">
-                <a href="/pages/produits/nouveau.php" style="font-size: 13px; color: #bbb;"><i class="fas fa-plus"></i> Nouveau produit</a>
+                <a href="/pages/produits/nouveau.php" style="font-size: 13px; color: #bbb;"><i class="fas fa-plus"></i> Nouveau lot</a>
             </li>
             
             <li class="<?= active('categories') ?>">
