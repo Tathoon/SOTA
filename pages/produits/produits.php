@@ -7,6 +7,43 @@ requireLogin(['Admin', 'Gérant']);
 $manager = new SotaManager();
 $user = getCurrentUser();
 
+$message = '';
+$error = '';
+
+// Traitement de la suppression
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'supprimer') {
+    try {
+        $id = (int)$_POST['id'];
+        
+        // Vérifier si le produit est utilisé dans des commandes en cours
+        $stmt = $manager->db->prepare("
+            SELECT COUNT(*) FROM details_commandes dc
+            JOIN commandes c ON dc.commande_id = c.id
+            WHERE dc.produit_id = ? AND c.statut NOT IN ('livree', 'annulee')
+        ");
+        $stmt->execute([$id]);
+        $commandes_actives = $stmt->fetchColumn();
+        
+        if ($commandes_actives > 0) {
+            throw new Exception("Impossible de supprimer ce lot car il est utilisé dans $commandes_actives commande(s) en cours");
+        }
+        
+        // Récupérer le nom pour le message
+        $stmt = $manager->db->prepare("SELECT nom, reference FROM produits WHERE id = ?");
+        $stmt->execute([$id]);
+        $produit = $stmt->fetch();
+        
+        // Marquer comme inactif au lieu de supprimer
+        $stmt = $manager->db->prepare("UPDATE produits SET actif = 0 WHERE id = ?");
+        $stmt->execute([$id]);
+        
+        $message = "Lot '{$produit['nom']}' ({$produit['reference']}) supprimé avec succès";
+        
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
 // Récupération des filtres
 $search = $_GET['search'] ?? '';
 $category = $_GET['category'] ?? '';
@@ -15,10 +52,6 @@ $statut_stock = $_GET['statut_stock'] ?? '';
 // Récupération des données
 $produits = $manager->getProduits($search, $category, $statut_stock);
 $categories = $manager->getCategories();
-
-// Message de succès/erreur
-$message = $_GET['message'] ?? '';
-$error = $_GET['error'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -188,7 +221,7 @@ $error = $_GET['error'] ?? '';
                                         <div class="size-indicators">
                                             <?php if ($produit['taille']): ?>
                                                 <?php 
-                                                // Simulation des tailles disponibles (en réalité, il faudrait une table de variantes)
+                                                // Simulation des tailles disponibles
                                                 $tailles_courantes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
                                                 $taille_principale = htmlspecialchars($produit['taille']);
                                                 ?>
@@ -258,21 +291,17 @@ $error = $_GET['error'] ?? '';
                                     </td>
                                     <td>
                                         <div class="action-buttons">
-                                            <a href="modifier.php?id=<?= $produit['id'] ?>" 
-                                               class="btn-border btn-small" 
-                                               title="Modifier le lot">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
                                             <a href="../stocks/mouvement.php?produit=<?= $produit['id'] ?>" 
                                                class="btn-border btn-small" 
                                                title="Ajuster le stock">
-                                                <i class="fas fa-exchange-alt"></i>
+                                                <i class="fas fa-exchange-alt"></i> Stock
                                             </a>
-                                            <a href="../stocks/historique.php?produit=<?= $produit['id'] ?>" 
-                                               class="btn-border btn-small" 
-                                               title="Voir l'historique">
-                                                <i class="fas fa-history"></i>
-                                            </a>
+                                            
+                                            <button type="button" 
+                                                    class="btn-danger btn-small" 
+                                                    onclick="confirmerSuppression(<?= $produit['id'] ?>, '<?= htmlspecialchars($produit['nom']) ?>', '<?= htmlspecialchars($produit['reference']) ?>')">
+                                                <i class="fas fa-trash"></i> Supprimer
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -310,5 +339,49 @@ $error = $_GET['error'] ?? '';
             </div>
         </main>
     </div>
+
+    <!-- Modal de confirmation de suppression -->
+    <div id="modalSuppression" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+            <div class="modal-header" style="margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Confirmer la suppression</h3>
+            </div>
+            <div class="modal-body" style="margin-bottom: 30px;">
+                <p>Êtes-vous sûr de vouloir supprimer le lot "<span id="nomProduit"></span>" ?</p>
+                <p style="color: #666;"><strong>Référence :</strong> <span id="referenceProduit"></span></p>
+                <p style="color: #666;"><strong>Cette action est irréversible.</strong></p>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn-border" onclick="fermerModal()">Annuler</button>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="supprimer">
+                    <input type="hidden" name="id" id="idProduit">
+                    <button type="submit" class="btn-danger">
+                        <i class="fas fa-trash"></i> Supprimer définitivement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function confirmerSuppression(id, nom, reference) {
+            document.getElementById('idProduit').value = id;
+            document.getElementById('nomProduit').textContent = nom;
+            document.getElementById('referenceProduit').textContent = reference;
+            document.getElementById('modalSuppression').style.display = 'flex';
+        }
+
+        function fermerModal() {
+            document.getElementById('modalSuppression').style.display = 'none';
+        }
+
+        // Fermer le modal en cliquant à l'extérieur
+        document.getElementById('modalSuppression').addEventListener('click', function(e) {
+            if (e.target === this) {
+                fermerModal();
+            }
+        });
+    </script>
 </body>
 </html>
