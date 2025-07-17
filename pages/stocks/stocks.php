@@ -7,39 +7,51 @@ requireLogin(['Admin', 'Préparateur']);
 $manager = new SotaManager();
 $user = getCurrentUser();
 
+$message = '';
+$error = '';
+
+// Traitement de la suppression
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'supprimer') {
+    try {
+        $id = (int)$_POST['id'];
+        
+        // Vérifier si le produit est utilisé dans des commandes en cours
+        $stmt = $manager->db->prepare("
+            SELECT COUNT(*) FROM details_commandes dc
+            JOIN commandes c ON dc.commande_id = c.id
+            WHERE dc.produit_id = ? AND c.statut NOT IN ('livree', 'annulee')
+        ");
+        $stmt->execute([$id]);
+        $commandes_actives = $stmt->fetchColumn();
+        
+        if ($commandes_actives > 0) {
+            throw new Exception("Impossible de supprimer ce produit car il est utilisé dans $commandes_actives commande(s) en cours");
+        }
+        
+        // Récupérer le nom pour le message
+        $stmt = $manager->db->prepare("SELECT nom, reference FROM produits WHERE id = ?");
+        $stmt->execute([$id]);
+        $produit = $stmt->fetch();
+        
+        // Marquer comme inactif au lieu de supprimer
+        $stmt = $manager->db->prepare("UPDATE produits SET actif = 0 WHERE id = ?");
+        $stmt->execute([$id]);
+        
+        $message = "Produit '{$produit['nom']}' ({$produit['reference']}) supprimé avec succès";
+        
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
 // Récupération des filtres
 $search = $_GET['search'] ?? '';
 $category = $_GET['category'] ?? '';
 $filtre = $_GET['filtre'] ?? '';
 
-// Convertir le filtre en statut_stock
-$statut_stock = '';
-switch ($filtre) {
-    case 'critique':
-        $statut_stock = 'alerte';
-        break;
-    case 'rupture':
-        $statut_stock = 'rupture';
-        break;
-    case 'normal':
-        $statut_stock = 'normal';
-        break;
-}
-
-// Récupération des données
-$produits = $manager->getProduits($search, $category, $statut_stock);
+// Récupération des produits avec filtres
+$produits = $manager->getProduits($search, $category, $filtre);
 $categories = $manager->getCategories();
-
-// Calcul des statistiques
-$stats_stock = [
-    'total' => count($manager->getProduits()),
-    'normal' => count($manager->getProduits('', '', 'normal')),
-    'alerte' => count($manager->getProduits('', '', 'alerte')),
-    'rupture' => count($manager->getProduits('', '', 'rupture'))
-];
-
-$message = $_GET['message'] ?? '';
-$error = $_GET['error'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -67,63 +79,35 @@ $error = $_GET['error'] ?? '';
 
             <section class="dashboard-header">
                 <h1><i class="fas fa-warehouse"></i> Gestion des stocks</h1>
-                <p class="dashboard-subtitle">Suivi des stocks prêt-à-porter - <?= count($produits) ?> articles</p>
+                <p class="dashboard-subtitle">
+                    Suivez et gérez vos stocks en temps réel - <?= count($produits) ?> produits
+                    <?= $search ? ' pour "' . htmlspecialchars($search) . '"' : '' ?>
+                </p>
             </section>
 
             <?php if ($message): ?>
-                <div class="success-message">
-                    <i class="fas fa-check-circle"></i> <?= htmlspecialchars($message) ?>
+                <div class="dashboard-section" style="background: #d4edda; border-left: 4px solid #28a745; margin: 20px 30px;">
+                    <p style="color: #155724; margin: 0;"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($message) ?></p>
                 </div>
             <?php endif; ?>
 
             <?php if ($error): ?>
-                <div class="error-message">
-                    <i class="fas fa-exclamation-triangle"></i> <?= htmlspecialchars($error) ?>
+                <div class="dashboard-section" style="background: #f8d7da; border-left: 4px solid #dc3545; margin: 20px 30px;">
+                    <p style="color: #721c24; margin: 0;"><i class="fas fa-exclamation-triangle"></i> <?= htmlspecialchars($error) ?></p>
                 </div>
             <?php endif; ?>
 
-            <!-- Statistiques de stock -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <i class="fas fa-tshirt icon"></i>
-                    <div class="stat-content">
-                        <h3><?= $stats_stock['total'] ?></h3>
-                        <p>Total produits</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i class="fas fa-check-circle icon" style="color: #27ae60;"></i>
-                    <div class="stat-content">
-                        <h3><?= $stats_stock['normal'] ?></h3>
-                        <p>Stock normal</p>
-                    </div>
-                </div>
-                <div class="stat-card alert">
-                    <i class="fas fa-exclamation-triangle icon" style="color: #f39c12;"></i>
-                    <div class="stat-content">
-                        <h3><?= $stats_stock['alerte'] ?></h3>
-                        <p>Stock en alerte</p>
-                    </div>
-                </div>
-                <div class="stat-card" style="border-left-color: #e74c3c;">
-                    <i class="fas fa-times-circle icon" style="color: #e74c3c;"></i>
-                    <div class="stat-content">
-                        <h3><?= $stats_stock['rupture'] ?></h3>
-                        <p>Rupture de stock</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filtres -->
-            <section class="filters-section">
+            <!-- Filtres et recherche -->
+            <section class="dashboard-section">
+                <h2><i class="fas fa-filter"></i> Filtres et recherche</h2>
                 <form method="GET" class="filters-form">
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" name="search" placeholder="Rechercher un produit..." 
+                        <input type="text" name="search" placeholder="Rechercher un produit (nom, référence...)" 
                                value="<?= htmlspecialchars($search) ?>">
                     </div>
-                    
-                    <select name="category" class="filter-select">
+
+                    <select name="category">
                         <option value="">Toutes les catégories</option>
                         <?php foreach ($categories as $cat): ?>
                             <option value="<?= $cat['id'] ?>" <?= $category == $cat['id'] ? 'selected' : '' ?>>
@@ -132,10 +116,10 @@ $error = $_GET['error'] ?? '';
                         <?php endforeach; ?>
                     </select>
 
-                    <select name="filtre" class="filter-select">
+                    <select name="filtre">
                         <option value="">Tous les stocks</option>
                         <option value="normal" <?= $filtre === 'normal' ? 'selected' : '' ?>>Stock normal</option>
-                        <option value="critique" <?= $filtre === 'critique' ? 'selected' : '' ?>>Stock critique</option>
+                        <option value="alerte" <?= $filtre === 'alerte' ? 'selected' : '' ?>>Stock critique</option>
                         <option value="rupture" <?= $filtre === 'rupture' ? 'selected' : '' ?>>Rupture</option>
                     </select>
 
@@ -158,418 +142,176 @@ $error = $_GET['error'] ?? '';
                     <a href="historique.php" class="btn-border">
                         <i class="fas fa-history"></i> Historique
                     </a>
-                    <a href="export.php?format=csv<?= $search ? '&search=' . urlencode($search) : '' ?><?= $category ? '&category=' . $category : '' ?><?= $filtre ? '&filtre=' . $filtre : '' ?>" 
-                       class="btn-border">
-                        <i class="fas fa-download"></i> Exporter CSV
+                    <a href="../produits/produits.php" class="btn-border">
+                        <i class="fas fa-boxes"></i> Gérer les lots
                     </a>
                 </div>
             </section>
 
             <!-- Liste des stocks -->
-            <div class="stock-table-container">
-                <?php if (empty($produits)): ?>
-                    <div class="empty-state">
-                        <i class="fas fa-warehouse"></i>
-                        <h3>Aucun produit trouvé</h3>
-                        <p>
-                            <?= $search || $category || $filtre ? 'Aucun produit ne correspond à vos critères.' : 'Votre stock est vide.' ?>
-                        </p>
-                    </div>
-                <?php else: ?>
-                    <table class="stock-table">
-                        <thead>
+            <table class="stock-table">
+                <thead>
+                    <tr>
+                        <th>Produit</th>
+                        <th>Catégorie</th>
+                        <th>Stock actuel</th>
+                        <th>Seuil minimum</th>
+                        <th>Emplacement</th>
+                        <th>Valeur stock</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($produits)): ?>
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 50px; color: #666;">
+                                <i class="fas fa-warehouse" style="font-size: 48px; margin-bottom: 20px; display: block;"></i>
+                                Aucun produit trouvé
+                                <?= $search || $category || $filtre ? '<br>Aucun produit ne correspond à vos critères.' : '<br>Votre stock est vide.' ?>
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($produits as $produit): ?>
                             <tr>
-                                <th>Produit</th>
-                                <th>Catégorie</th>
-                                <th>Stock actuel</th>
-                                <th>Seuil minimum</th>
-                                <th>Emplacement</th>
-                                <th>Valeur stock</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($produits as $produit): ?>
-                                <tr class="<?= $produit['statut_stock'] ?>">
-                                    <td>
-                                        <div class="stock-quantity">
-                                            <span class="quantity-value <?= $produit['statut_stock'] ?>"><?= $produit['stock_actuel'] ?></span>
-                                            <small>unités</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="threshold-info">
-                                            <span><?= $produit['seuil_minimum'] ?></span>
-                                            <small>seuil</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="location-badge">
-                                            <?= $produit['emplacement'] ? htmlspecialchars($produit['emplacement']) : 'Non défini' ?>
+                                <td>
+                                    <strong><?= htmlspecialchars($produit['nom']) ?></strong>
+                                    <br><small style="color: #666;"><?= htmlspecialchars($produit['reference']) ?></small>
+                                    <?php if ($produit['marque']): ?>
+                                        <br><small style="color: #888;"><?= htmlspecialchars($produit['marque']) ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="status actif">
+                                        <?= htmlspecialchars($produit['categorie_nom'] ?? 'Non classé') ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="stock-quantity">
+                                        <span class="quantity-value <?= $produit['statut_stock'] ?>" 
+                                              style="font-weight: bold; font-size: 1.2em;">
+                                            <?= $produit['stock_actuel'] ?>
                                         </span>
-                                    </td>
-                                    <td>
-                                        <div class="stock-value">
-                                            <?php if ($produit['prix_achat']): ?>
-                                                <strong><?= formatPrice($produit['stock_actuel'] * $produit['prix_achat']) ?></strong>
-                                                <small>Prix achat</small>
-                                            <?php else: ?>
-                                                <span style="color: #999;">N/A</span>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="status-with-indicator">
-                                            <?= getStatusBadge($produit['statut_stock']) ?>
-                                            <?php if ($produit['statut_stock'] === 'alerte'): ?>
-                                                <div class="status-progress">
-                                                    <div class="progress-bar" style="width: <?= ($produit['stock_actuel'] / $produit['seuil_minimum']) * 100 ?>%"></div>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="actions">
-                                            <a href="mouvement.php?produit=<?= $produit['id'] ?>" class="btn-border btn-small" title="Mouvement stock">
-                                                <i class="fas fa-exchange-alt"></i>
-                                            </a>
-                                            <a href="historique.php?produit=<?= $produit['id'] ?>" class="btn-border btn-small" title="Historique">
-                                                <i class="fas fa-history"></i>
-                                            </a>
-                                            <a href="../produits/details.php?id=<?= $produit['id'] ?>" class="btn-border btn-small" title="Détails produit">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <?php if ($produit['statut_stock'] === 'rupture' || $produit['statut_stock'] === 'alerte'): ?>
-                                                <button onclick="reapprovisionnerRapide(<?= $produit['id'] ?>, '<?= htmlspecialchars($produit['nom']) ?>')" 
-                                                        class="btn-warning btn-small" title="Réapprovisionner">
-                                                    <i class="fas fa-plus"></i>
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </div>
+                                        <small style="color: #666;"> unités</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="threshold-info">
+                                        <span><?= $produit['seuil_minimum'] ?></span>
+                                        <small style="color: #666;"> seuil</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <?php if ($produit['emplacement']): ?>
+                                        <span class="location-badge" style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;">
+                                            <i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($produit['emplacement']) ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span style="color: #999; font-style: italic;">Non défini</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php 
+                                    $valeur_stock = $produit['stock_actuel'] * ($produit['prix_vente'] ?? 0);
+                                    ?>
+                                    <strong style="color: #ff6b35;">
+                                        <?= number_format($valeur_stock, 2) ?>€
+                                    </strong>
+                                    <?php if ($produit['prix_vente']): ?>
+                                        <br><small style="color: #666;">
+                                            <?= number_format($produit['prix_vente'], 2) ?>€/unité
+                                        </small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php
+                                    $status_class = 'actif';
+                                    $status_text = 'Normal';
+                                    
+                                    if ($produit['statut_stock'] === 'rupture') {
+                                        $status_class = 'rupture';
+                                        $status_text = 'Rupture';
+                                    } elseif ($produit['statut_stock'] === 'alerte') {
+                                        $status_class = 'alerte';
+                                        $status_text = 'Stock bas';
+                                    }
+                                    ?>
+                                    <span class="status <?= $status_class ?>">
+                                        <?= $status_text ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="actions">
+                                        <a href="mouvement.php?produit=<?= $produit['id'] ?>" 
+                                           class="btn-orange btn-small" 
+                                           title="Ajuster le stock">
+                                            <i class="fas fa-exchange-alt"></i> Stock
+                                        </a>
+                                        
+                                        <a href="historique.php?produit=<?= $produit['id'] ?>" 
+                                           class="btn-border btn-small" 
+                                           title="Voir l'historique">
+                                            <i class="fas fa-history"></i> Historique
+                                        </a>
+                                        
+                                        <button type="button" 
+                                                class="btn-danger btn-small" 
+                                                onclick="confirmerSuppression(<?= $produit['id'] ?>, '<?= htmlspecialchars($produit['nom']) ?>', '<?= htmlspecialchars($produit['reference']) ?>')">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </main>
     </div>
 
-    <!-- Modal de réapprovisionnement rapide -->
-    <div id="reapprovisionModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-plus"></i> Réapprovisionnement rapide</h3>
-                <button onclick="closeReapprovisionModal()" class="modal-close">&times;</button>
+    <!-- Modal de confirmation de suppression -->
+    <div id="modalSuppression" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+            <div class="modal-header" style="margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Confirmer la suppression</h3>
             </div>
-            <form method="POST" action="mouvement.php" class="modal-form">
-                <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
-                <input type="hidden" name="type_mouvement" value="entree">
-                <input type="hidden" name="motif" value="Réapprovisionnement rapide">
-                <input type="hidden" name="produit_id" id="modal_produit_id">
-                
-                <div class="form-group">
-                    <label for="modal_produit_nom">Produit :</label>
-                    <input type="text" id="modal_produit_nom" class="form-control" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label for="modal_quantite">Quantité à ajouter :</label>
-                    <input type="number" name="quantite" id="modal_quantite" class="form-control" min="1" value="10" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="modal_cout_unitaire">Coût unitaire (optionnel) :</label>
-                    <input type="number" name="cout_unitaire" id="modal_cout_unitaire" class="form-control" step="0.01" min="0">
-                </div>
-                
-                <div class="modal-actions">
-                    <button type="button" onclick="closeReapprovisionModal()" class="btn-border">Annuler</button>
-                    <button type="submit" class="btn-orange">Confirmer</button>
-                </div>
-            </form>
+            <div class="modal-body" style="margin-bottom: 30px;">
+                <p>Êtes-vous sûr de vouloir supprimer le produit "<span id="nomProduit"></span>" ?</p>
+                <p style="color: #666;"><strong>Référence :</strong> <span id="referenceProduit"></span></p>
+                <p style="color: #666;"><strong>Attention :</strong> Cette action supprimera également l'historique des stocks de ce produit.</p>
+                <p style="color: #666;"><strong>Cette action est irréversible.</strong></p>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn-border" onclick="fermerModal()">Annuler</button>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="supprimer">
+                    <input type="hidden" name="id" id="idProduit">
+                    <button type="submit" class="btn-danger">
+                        <i class="fas fa-trash"></i> Supprimer définitivement
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
-    <style>
-        .stock-table-container {
-            margin: 0 30px;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            margin: 0 30px;
-        }
-
-        .empty-state i {
-            font-size: 64px;
-            color: #ddd;
-            margin-bottom: 20px;
-        }
-
-        .product-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .product-info strong {
-            color: #2c3e50;
-            font-size: 14px;
-        }
-
-        .product-info small {
-            color: #666;
-            font-size: 12px;
-        }
-
-        .product-variants {
-            display: flex;
-            gap: 5px;
-            margin: 5px 0;
-        }
-
-        .variant-badge {
-            background: #f8f9fa;
-            color: #495057;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            border: 1px solid #dee2e6;
-        }
-
-        .stock-quantity {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .quantity-value {
-            font-size: 18px;
-            font-weight: 600;
-            padding: 8px 12px;
-            border-radius: 20px;
-            min-width: 40px;
-            text-align: center;
-        }
-
-        .quantity-value.normal {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .quantity-value.alerte {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .quantity-value.rupture {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .threshold-info, .stock-value {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-        }
-
-        .threshold-info small, .stock-value small {
-            color: #666;
-            font-size: 11px;
-        }
-
-        .location-badge {
-            background: #e9ecef;
-            color: #495057;
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .status-with-indicator {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .status-progress {
-            width: 60px;
-            height: 4px;
-            background: #f8f9fa;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: var(--warning-color);
-            transition: width 0.3s ease;
-        }
-
-        .actions {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .actions .btn-small {
-            padding: 6px 8px;
-            font-size: 12px;
-        }
-
-        .btn-warning {
-            background: var(--warning-color);
-            color: white;
-            border: 1px solid var(--warning-color);
-        }
-
-        .btn-warning:hover {
-            background: #e67e22;
-            border-color: #e67e22;
-        }
-
-        /* Styles pour les lignes selon le statut */
-        tr.rupture {
-            background: rgba(231, 76, 60, 0.05);
-        }
-
-        tr.alerte {
-            background: rgba(243, 156, 18, 0.05);
-        }
-
-        tr.normal {
-            background: rgba(39, 174, 96, 0.05);
-        }
-
-        /* Modal styles */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            color: var(--secondary-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #999;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-form {
-            padding: 20px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-    </style>
-
     <script>
-        function reapprovisionnerRapide(produitId, produitNom) {
-            document.getElementById('modal_produit_id').value = produitId;
-            document.getElementById('modal_produit_nom').value = produitNom;
-            document.getElementById('reapprovisionModal').style.display = 'flex';
+        function confirmerSuppression(id, nom, reference) {
+            document.getElementById('idProduit').value = id;
+            document.getElementById('nomProduit').textContent = nom;
+            document.getElementById('referenceProduit').textContent = reference;
+            document.getElementById('modalSuppression').style.display = 'flex';
         }
 
-        function closeReapprovisionModal() {
-            document.getElementById('reapprovisionModal').style.display = 'none';
+        function fermerModal() {
+            document.getElementById('modalSuppression').style.display = 'none';
         }
 
         // Fermer le modal en cliquant à l'extérieur
-        document.getElementById('reapprovisionModal').addEventListener('click', function(e) {
+        document.getElementById('modalSuppression').addEventListener('click', function(e) {
             if (e.target === this) {
-                closeReapprovisionModal();
+                fermerModal();
             }
         });
-
-        // Fermer le modal avec Escape
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeReapprovisionModal();
-            }
-        });
-
-        // Mise à jour automatique des statuts de stock
-        setInterval(function() {
-            // On pourrait ici faire un appel AJAX pour vérifier les changements de stock
-            // et mettre à jour l'affichage en temps réel
-        }, 30000); // Toutes les 30 secondes
     </script>
 </body>
-</html>product-info">
-                                            <strong><?= htmlspecialchars($produit['nom']) ?></strong>
-                                            <small><?= htmlspecialchars($produit['reference']) ?></small>
-                                            <?php if ($produit['taille'] || $produit['couleur']): ?>
-                                                <div class="product-variants">
-                                                    <?php if ($produit['taille']): ?>
-                                                        <span class="variant-badge"><?= htmlspecialchars($produit['taille']) ?></span>
-                                                    <?php endif; ?>
-                                                    <?php if ($produit['couleur']): ?>
-                                                        <span class="variant-badge"><?= htmlspecialchars($produit['couleur']) ?></span>
-                                                    <?php endif; ?>
-                                                </div>
-                                            <?php endif; ?>
-                                            <?php if ($produit['marque']): ?>
-                                                <small style="color: #666;"><?= htmlspecialchars($produit['marque']) ?></small>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                    <td><?= htmlspecialchars($produit['categorie_nom'] ?? 'Non classé') ?></td>
-                                    <td>
-                                        <div class="
+</html>
