@@ -126,80 +126,86 @@ $fournisseurs = $manager->getFournisseurs($search);
             </section>
 
             <!-- Liste des fournisseurs -->
-            <div class="suppliers-container">
-                <?php if (empty($fournisseurs)): ?>
-                    <div style="text-align: center; padding: 50px; background: white; margin: 0 30px; border-radius: 12px;">
-                        <i class="fas fa-truck-loading" style="font-size: 48px; color: #ddd; margin-bottom: 20px;"></i>
-                        <h3 style="color: #666; margin-bottom: 10px;">Aucun fournisseur trouvé</h3>
-                        <p style="color: #999; margin-bottom: 20px;">
-                            <?= $search ? 'Aucun fournisseur ne correspond à votre recherche.' : 'Aucun fournisseur enregistré.' ?>
-                        </p>
-                        <?php if (!$search): ?>
-                            <a href="nouveau.php" class="btn-orange">
-                                <i class="fas fa-plus"></i> Ajouter le premier fournisseur
-                            </a>
-                        <?php endif; ?>
-                    </div>
-                <?php else: ?>
-                    <div class="suppliers-grid">
-                        <?php foreach ($fournisseurs as $fournisseur): ?>
-                            <div class="supplier-card">
-                                <div class="supplier-header">
-                                    <div class="supplier-main">
-                                        <h3><?= htmlspecialchars($fournisseur['nom']) ?></h3>
-                                        <p><?= htmlspecialchars($fournisseur['contact'] ?? 'Contact non défini') ?></p>
-                                        
-                                        <div class="contact-info">
-                                            <?php if ($fournisseur['email']): ?>
-                                                <span><i class="fas fa-envelope"></i> <?= htmlspecialchars($fournisseur['email']) ?></span>
-                                            <?php endif; ?>
-                                            <?php if ($fournisseur['telephone']): ?>
-                                                <span><i class="fas fa-phone"></i> <?= htmlspecialchars($fournisseur['telephone']) ?></span>
-                                            <?php endif; ?>
-                                            <?php if ($fournisseur['ville']): ?>
-                                                <span><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($fournisseur['ville']) ?></span>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="business-info">
-                                        <div class="info-item">
-                                            <label>Délai livraison</label>
-                                            <span><?= $fournisseur['delais_livraison'] ?> jours</span>
-                                        </div>
-                                        
-                                        <?php if ($fournisseur['conditions_paiement']): ?>
-                                            <div class="info-item">
-                                                <label>Conditions paiement</label>
-                                                <span><?= htmlspecialchars($fournisseur['conditions_paiement']) ?></span>
-                                            </div>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($fournisseur['specialite_mode']): ?>
-                                            <div class="info-item">
-                                                <label>Spécialité</label>
-                                                <span><?= htmlspecialchars($fournisseur['specialite_mode']) ?></span>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                
-                                <div class="supplier-actions">
-                                    <a href="commandes_fournisseurs.php?fournisseur=<?= $fournisseur['id'] ?>" class="btn-orange btn-small">
-                                        <i class="fas fa-shopping-cart"></i> Commandes
+            <table class="stock-table">
+                <thead>
+                    <tr>
+                        <th>Nom du fournisseur</th>
+                        <th>Contact</th>
+                        <th>Téléphone / Email</th>
+                        <th>Ville</th>
+                        <th>Délai livraison</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($fournisseurs)): ?>
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 50px; color: #666;">
+                                <i class="fas fa-truck-loading" style="font-size: 48px; margin-bottom: 20px; display: block;"></i>
+                                Aucun fournisseur trouvé
+                                <?php if (!$search): ?>
+                                    <br><a href="nouveau.php" class="btn-orange" style="margin-top: 15px;">
+                                        <i class="fas fa-plus"></i> Ajouter le premier fournisseur
                                     </a>
-                                    
-                                    <button type="button" 
-                                            class="btn-danger btn-small" 
-                                            onclick="confirmerSuppression(<?= $fournisseur['id'] ?>, '<?= htmlspecialchars($fournisseur['nom']) ?>')">
-                                        <i class="fas fa-trash"></i> Supprimer
-                                    </button>
-                                </div>
-                            </div>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($fournisseurs as $fournisseur): ?>
+                            <tr>
+                                <td>
+                                    <strong><?= htmlspecialchars($fournisseur['nom']) ?></strong>
+                                    <?php if ($fournisseur['specialite_mode']): ?>
+                                        <br><small style="color: #666;"><?= htmlspecialchars($fournisseur['specialite_mode']) ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?= htmlspecialchars($fournisseur['contact'] ?? 'Non défini') ?>
+                                    <?php if ($fournisseur['siret']): ?>
+                                        <br><small style="color: #666;">SIRET: <?= htmlspecialchars($fournisseur['siret']) ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($fournisseur['telephone']): ?>
+                                        <i class="fas fa-phone"></i> <?= htmlspecialchars($fournisseur['telephone']) ?><br>
+                                    <?php endif; ?>
+                                    <?php if ($fournisseur['email']): ?>
+                                        <i class="fas fa-envelope"></i> <?= htmlspecialchars($fournisseur['email']) ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($fournisseur['ville']): ?>
+                                        <i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($fournisseur['ville']) ?>
+                                        <?php if ($fournisseur['code_postal']): ?>
+                                            <br><small style="color: #666;"><?= htmlspecialchars($fournisseur['code_postal']) ?></small>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?= $fournisseur['delais_livraison'] ?> jours
+                                    <?php if ($fournisseur['conditions_paiement']): ?>
+                                        <br><small style="color: #666;"><?= htmlspecialchars($fournisseur['conditions_paiement']) ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <div class="actions">
+                                        <a href="commandes_fournisseurs.php?fournisseur=<?= $fournisseur['id'] ?>" 
+                                           class="btn-orange btn-small">
+                                            <i class="fas fa-shopping-cart"></i> Commandes
+                                        </a>
+                                        
+                                        <button type="button" 
+                                                class="btn-danger btn-small" 
+                                                onclick="confirmerSuppression(<?= $fournisseur['id'] ?>, '<?= htmlspecialchars($fournisseur['nom']) ?>')">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
                         <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </main>
     </div>
 
