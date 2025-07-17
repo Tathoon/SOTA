@@ -66,7 +66,7 @@ $error = $_GET['error'] ?? '';
                 <form method="GET" class="filters-form">
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" name="search" placeholder="Rechercher un produit (nom, référence, marque...)" 
+                        <input type="text" name="search" placeholder="Rechercher un lot (nom, référence, marque...)" 
                                value="<?= htmlspecialchars($search) ?>">
                     </div>
                     
