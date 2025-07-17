@@ -7,35 +7,47 @@ requireLogin(['Admin', 'Gérant']);
 $manager = new SotaManager();
 $user = getCurrentUser();
 
+$message = '';
+$error = '';
+
+// Traitement de la suppression
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'supprimer') {
+    try {
+        $id = (int)$_POST['id'];
+        
+        // Vérifier si le fournisseur a des commandes en cours
+        $stmt = $manager->db->prepare("
+            SELECT COUNT(*) FROM commandes_fournisseurs 
+            WHERE fournisseur_id = ? AND statut NOT IN ('annulee', 'recue')
+        ");
+        $stmt->execute([$id]);
+        $commandes_actives = $stmt->fetchColumn();
+        
+        if ($commandes_actives > 0) {
+            throw new Exception("Impossible de supprimer ce fournisseur car il a $commandes_actives commande(s) en cours");
+        }
+        
+        // Récupérer le nom pour le message
+        $stmt = $manager->db->prepare("SELECT nom FROM fournisseurs WHERE id = ?");
+        $stmt->execute([$id]);
+        $nom_fournisseur = $stmt->fetchColumn();
+        
+        // Marquer comme inactif au lieu de supprimer
+        $stmt = $manager->db->prepare("UPDATE fournisseurs SET actif = 0 WHERE id = ?");
+        $stmt->execute([$id]);
+        
+        $message = "Fournisseur '$nom_fournisseur' supprimé avec succès";
+        
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
 // Récupération des filtres
 $search = $_GET['search'] ?? '';
 
 // Récupération des fournisseurs
 $fournisseurs = $manager->getFournisseurs($search);
-
-// Statistiques des fournisseurs
-try {
-    $stmt = $manager->db->prepare("
-        SELECT 
-            COUNT(*) as total_fournisseurs,
-            COUNT(CASE WHEN actif = 1 THEN 1 END) as fournisseurs_actifs,
-            AVG(delais_livraison) as delai_moyen
-        FROM fournisseurs
-    ");
-    $stmt->execute();
-    $stats = $stmt->fetch();
-    
-    // Nombre de commandes fournisseurs
-    $stmt = $manager->db->prepare("SELECT COUNT(*) as total FROM commandes_fournisseurs");
-    $stmt->execute();
-    $stats['total_commandes'] = $stmt->fetch()['total'];
-    
-} catch (Exception $e) {
-    $stats = ['total_fournisseurs' => 0, 'fournisseurs_actifs' => 0, 'delai_moyen' => 0, 'total_commandes' => 0];
-}
-
-$message = $_GET['message'] ?? '';
-$error = $_GET['error'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -63,55 +75,27 @@ $error = $_GET['error'] ?? '';
 
             <section class="dashboard-header">
                 <h1><i class="fas fa-truck-loading"></i> Gestion des fournisseurs</h1>
-                <p class="dashboard-subtitle">Partenaires prêt-à-porter féminin - <?= count($fournisseurs) ?> fournisseurs</p>
+                <p class="dashboard-subtitle">
+                    Gérez vos partenaires fournisseurs - <?= count($fournisseurs) ?> fournisseurs actifs
+                    <?= $search ? ' pour "' . htmlspecialchars($search) . '"' : '' ?>
+                </p>
             </section>
 
             <?php if ($message): ?>
-                <div class="success-message">
-                    <i class="fas fa-check-circle"></i> <?= htmlspecialchars($message) ?>
+                <div class="dashboard-section" style="background: #d4edda; border-left: 4px solid #28a745; margin: 20px 30px;">
+                    <p style="color: #155724; margin: 0;"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($message) ?></p>
                 </div>
             <?php endif; ?>
 
             <?php if ($error): ?>
-                <div class="error-message">
-                    <i class="fas fa-exclamation-triangle"></i> <?= htmlspecialchars($error) ?>
+                <div class="dashboard-section" style="background: #f8d7da; border-left: 4px solid #dc3545; margin: 20px 30px;">
+                    <p style="color: #721c24; margin: 0;"><i class="fas fa-exclamation-triangle"></i> <?= htmlspecialchars($error) ?></p>
                 </div>
             <?php endif; ?>
 
-            <!-- Statistiques fournisseurs -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <i class="fas fa-truck-loading icon"></i>
-                    <div class="stat-content">
-                        <h3><?= $stats['total_fournisseurs'] ?></h3>
-                        <p>Fournisseurs</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i class="fas fa-check-circle icon" style="color: #27ae60;"></i>
-                    <div class="stat-content">
-                        <h3><?= $stats['fournisseurs_actifs'] ?></h3>
-                        <p>Actifs</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i class="fas fa-clock icon" style="color: #3498db;"></i>
-                    <div class="stat-content">
-                        <h3><?= round($stats['delai_moyen']) ?> j</h3>
-                        <p>Délai moyen</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i class="fas fa-shopping-cart icon" style="color: #f39c12;"></i>
-                    <div class="stat-content">
-                        <h3><?= $stats['total_commandes'] ?></h3>
-                        <p>Commandes passées</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filtres -->
-            <section class="filters-section">
+            <!-- Filtres et recherche -->
+            <section class="dashboard-section">
+                <h2><i class="fas fa-filter"></i> Recherche</h2>
                 <form method="GET" class="filters-form">
                     <div class="search-box">
                         <i class="fas fa-search"></i>
@@ -144,10 +128,10 @@ $error = $_GET['error'] ?? '';
             <!-- Liste des fournisseurs -->
             <div class="suppliers-container">
                 <?php if (empty($fournisseurs)): ?>
-                    <div class="empty-state">
-                        <i class="fas fa-truck-loading"></i>
-                        <h3>Aucun fournisseur trouvé</h3>
-                        <p>
+                    <div style="text-align: center; padding: 50px; background: white; margin: 0 30px; border-radius: 12px;">
+                        <i class="fas fa-truck-loading" style="font-size: 48px; color: #ddd; margin-bottom: 20px;"></i>
+                        <h3 style="color: #666; margin-bottom: 10px;">Aucun fournisseur trouvé</h3>
+                        <p style="color: #999; margin-bottom: 20px;">
                             <?= $search ? 'Aucun fournisseur ne correspond à votre recherche.' : 'Aucun fournisseur enregistré.' ?>
                         </p>
                         <?php if (!$search): ?>
@@ -161,59 +145,21 @@ $error = $_GET['error'] ?? '';
                         <?php foreach ($fournisseurs as $fournisseur): ?>
                             <div class="supplier-card">
                                 <div class="supplier-header">
-                                    <div class="supplier-info">
+                                    <div class="supplier-main">
                                         <h3><?= htmlspecialchars($fournisseur['nom']) ?></h3>
-                                        <?php if ($fournisseur['specialite_mode']): ?>
-                                            <p class="specialite"><?= htmlspecialchars($fournisseur['specialite_mode']) ?></p>
-                                        <?php endif; ?>
-                                        <div class="supplier-badges">
-                                            <?php if ($fournisseur['actif']): ?>
-                                                <span class="badge active">Actif</span>
-                                            <?php else: ?>
-                                                <span class="badge inactive">Inactif</span>
+                                        <p><?= htmlspecialchars($fournisseur['contact'] ?? 'Contact non défini') ?></p>
+                                        
+                                        <div class="contact-info">
+                                            <?php if ($fournisseur['email']): ?>
+                                                <span><i class="fas fa-envelope"></i> <?= htmlspecialchars($fournisseur['email']) ?></span>
                                             <?php endif; ?>
-                                            <?php if ($fournisseur['note_qualite']): ?>
-                                                <span class="badge rating">
-                                                    <i class="fas fa-star"></i> <?= $fournisseur['note_qualite'] ?>/5
-                                                </span>
+                                            <?php if ($fournisseur['telephone']): ?>
+                                                <span><i class="fas fa-phone"></i> <?= htmlspecialchars($fournisseur['telephone']) ?></span>
+                                            <?php endif; ?>
+                                            <?php if ($fournisseur['ville']): ?>
+                                                <span><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($fournisseur['ville']) ?></span>
                                             <?php endif; ?>
                                         </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="supplier-content">
-                                    <div class="contact-info">
-                                        <?php if ($fournisseur['contact']): ?>
-                                            <div class="info-row">
-                                                <i class="fas fa-user"></i>
-                                                <span><?= htmlspecialchars($fournisseur['contact']) ?></span>
-                                            </div>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($fournisseur['telephone']): ?>
-                                            <div class="info-row">
-                                                <i class="fas fa-phone"></i>
-                                                <a href="tel:<?= htmlspecialchars($fournisseur['telephone']) ?>">
-                                                    <?= htmlspecialchars($fournisseur['telephone']) ?>
-                                                </a>
-                                            </div>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($fournisseur['email']): ?>
-                                            <div class="info-row">
-                                                <i class="fas fa-envelope"></i>
-                                                <a href="mailto:<?= htmlspecialchars($fournisseur['email']) ?>">
-                                                    <?= htmlspecialchars($fournisseur['email']) ?>
-                                                </a>
-                                            </div>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($fournisseur['ville']): ?>
-                                            <div class="info-row">
-                                                <i class="fas fa-map-marker-alt"></i>
-                                                <span><?= htmlspecialchars($fournisseur['ville']) ?> (<?= htmlspecialchars($fournisseur['pays']) ?>)</span>
-                                            </div>
-                                        <?php endif; ?>
                                     </div>
                                     
                                     <div class="business-info">
@@ -229,25 +175,25 @@ $error = $_GET['error'] ?? '';
                                             </div>
                                         <?php endif; ?>
                                         
-                                        <?php if ($fournisseur['siret']): ?>
+                                        <?php if ($fournisseur['specialite_mode']): ?>
                                             <div class="info-item">
-                                                <label>SIRET</label>
-                                                <span><?= htmlspecialchars($fournisseur['siret']) ?></span>
+                                                <label>Spécialité</label>
+                                                <span><?= htmlspecialchars($fournisseur['specialite_mode']) ?></span>
                                             </div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
                                 
                                 <div class="supplier-actions">
-                                    <a href="details.php?id=<?= $fournisseur['id'] ?>" class="btn-border btn-small">
-                                        <i class="fas fa-eye"></i> Détails
-                                    </a>
-                                    <a href="modifier.php?id=<?= $fournisseur['id'] ?>" class="btn-border btn-small">
-                                        <i class="fas fa-edit"></i> Modifier
-                                    </a>
                                     <a href="commandes_fournisseurs.php?fournisseur=<?= $fournisseur['id'] ?>" class="btn-orange btn-small">
                                         <i class="fas fa-shopping-cart"></i> Commandes
                                     </a>
+                                    
+                                    <button type="button" 
+                                            class="btn-danger btn-small" 
+                                            onclick="confirmerSuppression(<?= $fournisseur['id'] ?>, '<?= htmlspecialchars($fournisseur['nom']) ?>')">
+                                        <i class="fas fa-trash"></i> Supprimer
+                                    </button>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -257,184 +203,46 @@ $error = $_GET['error'] ?? '';
         </main>
     </div>
 
-    <style>
-        .suppliers-container {
-            margin: 0 30px;
+    <!-- Modal de confirmation de suppression -->
+    <div id="modalSuppression" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+            <div class="modal-header" style="margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Confirmer la suppression</h3>
+            </div>
+            <div class="modal-body" style="margin-bottom: 30px;">
+                <p>Êtes-vous sûr de vouloir supprimer le fournisseur "<span id="nomFournisseur"></span>" ?</p>
+                <p style="color: #666;"><strong>Cette action est irréversible.</strong></p>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn-border" onclick="fermerModal()">Annuler</button>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="supprimer">
+                    <input type="hidden" name="id" id="idFournisseur">
+                    <button type="submit" class="btn-danger">
+                        <i class="fas fa-trash"></i> Supprimer définitivement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function confirmerSuppression(id, nom) {
+            document.getElementById('idFournisseur').value = id;
+            document.getElementById('nomFournisseur').textContent = nom;
+            document.getElementById('modalSuppression').style.display = 'flex';
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        function fermerModal() {
+            document.getElementById('modalSuppression').style.display = 'none';
         }
 
-        .empty-state i {
-            font-size: 64px;
-            color: #ddd;
-            margin-bottom: 20px;
-        }
-
-        .suppliers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 25px;
-        }
-
-        .supplier-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            transition: all 0.3s ease;
-            border: 1px solid #f0f0f0;
-        }
-
-        .supplier-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        }
-
-        .supplier-header {
-            padding: 25px 25px 15px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .supplier-info h3 {
-            margin: 0 0 8px 0;
-            color: var(--secondary-color);
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .specialite {
-            margin: 0 0 12px 0;
-            color: var(--primary-color);
-            font-style: italic;
-            font-size: 14px;
-        }
-
-        .supplier-badges {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            padding: 4px 10px;
-            border-radius: 15px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .badge.active {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .badge.inactive {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .badge.rating {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .supplier-content {
-            padding: 20px 25px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .contact-info,
-        .business-info {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .info-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-        }
-
-        .info-row i {
-            color: var(--primary-color);
-            width: 16px;
-            text-align: center;
-        }
-
-        .info-row a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .info-row a:hover {
-            text-decoration: underline;
-        }
-
-        .info-item {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .info-item label {
-            font-size: 11px;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-
-        .info-item span {
-            font-size: 13px;
-            color: var(--secondary-color);
-            font-weight: 500;
-        }
-
-        .supplier-actions {
-            padding: 20px 25px;
-            border-top: 1px solid #f0f0f0;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .supplier-actions .btn-small {
-            flex: 1;
-            min-width: 0;
-            text-align: center;
-            padding: 8px 12px;
-            font-size: 12px;
-        }
-
-        @media (max-width: 768px) {
-            .suppliers-grid {
-                grid-template-columns: 1fr;
+        // Fermer le modal en cliquant à l'extérieur
+        document.getElementById('modalSuppression').addEventListener('click', function(e) {
+            if (e.target === this) {
+                fermerModal();
             }
-
-            .supplier-content {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .supplier-actions {
-                flex-direction: column;
-            }
-
-            .supplier-actions .btn-small {
-                flex: none;
-            }
-        }
-    </style>
+        });
+    </script>
 </body>
 </html>
